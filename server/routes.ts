@@ -118,8 +118,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(call);
     } catch (error) {
       console.error("Error creating VAPI call:", error);
+      
+      // Check for specific VAPI errors
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      
+      if (errorMessage.includes("Can't Dial Outbound Yet")) {
+        return res.status(400).json({ 
+          message: "Outbound calling not enabled", 
+          details: "Your VAPI account needs outbound calling enabled. Contact VAPI support to enable this feature." 
+        });
+      }
+      
+      if (errorMessage.includes("valid phone number in the E.164 format")) {
+        return res.status(400).json({ 
+          message: "Invalid phone number format", 
+          details: "Please enter a valid phone number with country code (e.g., +15551234567)" 
+        });
+      }
+      
       res.status(500).json({ 
-        message: "Error creating call through VAPI API" 
+        message: "Error creating call through VAPI API",
+        details: errorMessage.includes("VAPI API error") ? errorMessage : "Please check your VAPI configuration"
       });
     }
   });

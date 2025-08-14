@@ -17,7 +17,8 @@ Deployment preference: Temporary deployment for testing, will migrate to other p
 - React dashboard displaying call statistics and detailed call logs
 - 4 test calls successfully logged and displayed
 - API key configured: 740abf27-9130-4ade-a3d0-477e8229d044
-- Ready for VAPI agent connection
+- **VAPI SDK Integration Complete**: Full API access with call management
+- **Account Limitation**: Outbound calling requires VAPI support to enable feature
 
 ## VAPI Configuration Ready
 - Agent ID: b3870ff6-ed43-402e-bdba-14f65567e517

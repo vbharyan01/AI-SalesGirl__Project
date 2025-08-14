@@ -32,7 +32,17 @@ export default function VapiControl() {
   // Create call mutation
   const createCallMutation = useMutation({
     mutationFn: async (phoneNumber: string) => {
-      const response = await apiRequest("POST", "/api/vapi/calls", { phoneNumber });
+      const response = await fetch("/api/vapi/calls", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || errorData.message || "Failed to create call");
+      }
+      
       return response.json();
     },
     onSuccess: (data) => {
@@ -62,6 +72,18 @@ export default function VapiControl() {
       });
       return;
     }
+    
+    // Basic validation for phone number
+    const digits = phoneNumber.replace(/\D/g, '');
+    if (digits.length < 10) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid 10-digit phone number",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     createCallMutation.mutate(phoneNumber);
   };
 
@@ -105,6 +127,16 @@ export default function VapiControl() {
               </CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div className="flex items-center">
+                  <AlertCircle className="h-4 w-4 text-yellow-600 mr-2" />
+                  <p className="text-sm text-yellow-800">
+                    <strong>Note:</strong> Outbound calling may not be enabled on your VAPI account. 
+                    Contact VAPI support to enable this feature for live calls.
+                  </p>
+                </div>
+              </div>
+              
               <form onSubmit={handleCreateCall} className="space-y-4">
                 <div>
                   <Label htmlFor="phoneNumber">Phone Number</Label>
@@ -116,6 +148,9 @@ export default function VapiControl() {
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     className="mt-1"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter a valid US phone number (e.g., 5551234567 or +15551234567)
+                  </p>
                 </div>
                 <Button 
                   type="submit" 
