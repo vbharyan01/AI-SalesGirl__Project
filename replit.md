@@ -1,8 +1,8 @@
-# AI Sales Girl VAPI Integration
+# INTELA AI Agent Solution
 
 ## Overview
 
-This is a complete AI Sales Girl system with VAPI integration that automatically logs sales call data and provides a professional dashboard for call management. The system receives webhook data from VAPI when calls complete, stores it in PostgreSQL, and displays comprehensive analytics and call logs through a React dashboard.
+This is a complete INTELA AI Agent Solution developed by Cehpoint with VAPI integration that automatically logs sales call data and provides a professional dashboard for call management. The system receives webhook data from VAPI when calls complete, stores it in PostgreSQL, and displays comprehensive analytics and call logs through a React dashboard.
 
 ## User Preferences
 

@@ -90,11 +90,11 @@ export default function Dashboard() {
             <div className="flex items-center">
               <h1 className="text-2xl font-bold text-gray-900">
                 <Phone className="inline-block text-primary mr-3" />
-                VAPI Call Dashboard
+                INTELA AI Agent Dashboard
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-500">AI Sales Girl</div>
+              <div className="text-sm text-gray-500">Developed by Cehpoint</div>
               <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center">
                 <User className="text-white text-sm" />
               </div>
@@ -318,15 +318,28 @@ export default function Dashboard() {
         </Card>
 
         {/* Footer */}
-        <footer className="mt-8 py-8">
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <div>© 2024 VAPI Call Dashboard. Powered by AI Sales Girl.</div>
-            <div className="flex items-center space-x-4">
-              <span className="flex items-center">
-                <div className="h-2 w-2 bg-green-400 rounded-full mr-2"></div>
-                System Operational
-              </span>
-              <span>Connected to VAPI</span>
+        <footer className="mt-8 py-8 bg-gray-800 text-white rounded-lg">
+          <div className="px-6 py-4">
+            <div className="flex flex-col md:flex-row justify-between items-center">
+              <div className="mb-4 md:mb-0">
+                <h3 className="text-lg font-semibold">INTELA AI Agent Solution</h3>
+                <p className="text-gray-300 text-sm">Professional AI-powered sales communication platform</p>
+              </div>
+              <div className="text-center md:text-right">
+                <p className="text-sm text-gray-300">Developed by</p>
+                <p className="text-xl font-bold">Cehpoint</p>
+                <p className="text-xs text-gray-400">IT & Cyber Security Company</p>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-700 flex items-center justify-between text-sm">
+              <div>© 2025 INTELA AI Agent Solution. All rights reserved.</div>
+              <div className="flex items-center space-x-4">
+                <span className="flex items-center">
+                  <div className="h-2 w-2 bg-green-400 rounded-full mr-2"></div>
+                  System Operational
+                </span>
+                <span>Connected to VAPI</span>
+              </div>
             </div>
           </div>
         </footer>
