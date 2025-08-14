@@ -254,7 +254,7 @@ export default function Dashboard() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredCalls.map((call) => {
-                    const { date, time } = formatDate(call.timestamp);
+                    const { date, time } = formatDate(call.timestamp.toString());
                     return (
                       <tr key={call.id} className="hover:bg-gray-50 transition-colors duration-150">
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -296,7 +296,7 @@ export default function Dashboard() {
                               variant="ghost"
                               size="sm"
                               className="text-primary hover:text-blue-700 transition-colors"
-                              onClick={() => window.open(call.recording_url, '_blank')}
+                              onClick={() => call.recording_url && window.open(call.recording_url, '_blank')}
                             >
                               <Play className="w-4 h-4 mr-1" />
                               Play
