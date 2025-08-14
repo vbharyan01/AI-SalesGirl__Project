@@ -195,8 +195,8 @@ export default function VapiControl() {
                     <span className="text-sm font-medium">Assistant Active</span>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">ID: {assistant.id || "b3870ff6-ed43-402e-bdba-14f65567e517"}</p>
-                    <p className="text-sm text-gray-600">Name: {assistant.name || "AI Sales Girl"}</p>
+                    <p className="text-sm text-gray-600">ID: {assistant.id}</p>
+                    <p className="text-sm text-gray-600">Name: {assistant.name}</p>
                   </div>
                 </div>
               ) : (
@@ -229,20 +229,14 @@ export default function VapiControl() {
                     <span className="text-sm font-medium">Phone Active</span>
                   </div>
                   <div>
-                    <p className="text-lg font-semibold">{formatPhoneNumber(phoneNumberInfo.number || "+1 (555) 555-0123")}</p>
-                    <p className="text-sm text-gray-600">ID: {phoneNumberInfo.id || "46b06452-9890-40f3-b046-80a7543f63c3"}</p>
+                    <p className="text-lg font-semibold">{phoneNumberInfo.sipUri || "Phone number unavailable"}</p>
+                    <p className="text-sm text-gray-600">ID: {phoneNumberInfo.id}</p>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <CheckCircle className="text-green-500 mr-2 h-4 w-4" />
-                    <span className="text-sm font-medium">Phone Configured</span>
-                  </div>
-                  <div>
-                    <p className="text-lg font-semibold">+1 (555) 555-0123</p>
-                    <p className="text-sm text-gray-600">ID: 46b06452-9890-40f3-b046-80a7543f63c3</p>
-                  </div>
+                <div className="flex items-center">
+                  <AlertCircle className="text-orange-500 mr-2 h-4 w-4" />
+                  <span className="text-sm">Phone number information unavailable</span>
                 </div>
               )}
             </CardContent>
@@ -291,8 +285,8 @@ export default function VapiControl() {
               ) : (
                 <div className="text-center py-6">
                   <Phone className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500">No VAPI calls found</p>
-                  <p className="text-xs text-gray-400">Make your first call using the form above</p>
+                  <p className="text-sm text-gray-500">No real VAPI calls yet</p>
+                  <p className="text-xs text-gray-400">Live call data from VAPI API will appear here when calls are made</p>
                 </div>
               )}
             </CardContent>
