@@ -1,0 +1,44 @@
+I want to build a MERN stack project in Replit that works as an AI Sales Girl using my VAPI credentials.
+
+Project Requirements:
+1. Tech stack: Node.js + Express.js backend (in Replit), MongoDB Atlas (my MONGODB_URI is stored as a secret), and a simple HTML/JS frontend (optional) to view logs.
+2. The backend should have:
+   - POST /api/logCall — Receives JSON data from VAPI containing:
+        name, company, email, phone, status, notes, recording_url, timestamp
+     and stores it in MongoDB.
+   - GET /api/calls — Returns all stored calls in JSON.
+   - GET / — A simple HTML table displaying all stored calls (no fancy CSS needed, just functional).
+3. Integrate VAPI Webhook:
+   - I will set my VAPI Agent to send call conversation data to /api/logCall.
+   - The backend should accept JSON and handle errors gracefully.
+4. MongoDB:
+   - Use my provided MONGODB_URI secret in Replit.
+   - Database name: salesdb
+   - Collection name: calls
+   - My MongoDB URI (to store in Replit secrets as MONGODB_URI):
+     mongodb+srv://cehpoint:JIT2000%3E@cluster0.qqfryrj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+5. Security:
+   - Allow only requests containing a valid API key in headers (X-API-KEY) for POST /api/logCall (to protect against spam).
+   - I will provide the API key and store it in Replit secrets.
+6. Deployment:
+   - The project should run fully inside Replit.
+   - Once deployed, I will copy the public Replit URL and set it in my VAPI Agent’s webhook settings.
+7. Testing:
+   - Include a test POST request script in the repo so I can test without making a real VAPI call.
+
+Additional Info:
+- My VAPI credentials are:
+   Public Key: 740abf27-9130-4ade-a3d0-477e8229d044
+   Private Key: d98e80d8-9153-40f2-8f66-df366364247a
+   Agent ID: b3870ff6-ed43-402e-bdba-14f65567e517
+   Phone ID: 46b06452-9890-40f3-b046-80a7543f63c3
+   SIP: sip:cehpoint-agent@sip.vapi.ai
+
+Deliverables:
+- Complete backend code in Replit.
+- Instructions on how to run and connect with VAPI.
+- Simple HTML frontend to view calls.
+- API key protection for POST route.
+
+Goal:
+This project will allow my VAPI AI Sales Girl to make calls, collect lead info, and log it automatically in MongoDB, viewable in a basic dashboard.
