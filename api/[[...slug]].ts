@@ -1,17 +1,19 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import express from "express";
-import serverless from "serverless-http";
 import { registerRoutes } from "../server/routes";
 
+// Create a single Express app and reuse between invocations
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+let initialized = false;
 
-// Register all routes; route registration is synchronous even though function is marked async
-// We don't need the returned HTTP server in serverless env
-registerRoutes(app).catch((err) => {
-  console.error("Failed to register routes in serverless function:", err);
-});
-
-export default serverless(app);
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!initialized) {
+    await registerRoutes(app);
+    initialized = true;
+  }
+  return app(req as any, res as any);
+}
 
 
