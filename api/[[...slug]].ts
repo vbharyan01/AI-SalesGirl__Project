@@ -10,10 +10,21 @@ let initialized = false;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!initialized) {
-    await registerRoutes(app);
-    initialized = true;
+    try {
+      await registerRoutes(app);
+      initialized = true;
+    } catch (error) {
+      console.error("Failed to initialize routes:", error);
+      return res.status(500).json({ error: "Failed to initialize server" });
+    }
   }
-  return app(req as any, res as any);
+  
+  // Convert Vercel request/response to Express format
+  const expressReq = req as any;
+  const expressRes = res as any;
+  
+  // Handle the request through Express
+  app(expressReq, expressRes);
 }
 
 
