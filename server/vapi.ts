@@ -1,31 +1,43 @@
 // VAPI API service using fetch instead of SDK
 const VAPI_BASE_URL = "https://api.vapi.ai";
-const VAPI_PRIVATE_KEY = process.env.VAPI_PRIVATE_KEY || "d98e80d8-9153-40f2-8f66-df366364247a";
-
-async function vapiRequest(endpoint: string, options: RequestInit = {}) {
-  const response = await fetch(`${VAPI_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      "Authorization": `Bearer ${VAPI_PRIVATE_KEY}`,
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`VAPI API error details:`, errorText);
-    throw new Error(`VAPI API error: ${response.status} ${response.statusText} - ${errorText}`);
-  }
-
-  return response.json();
-}
 
 export class VapiService {
+  private readonly privateKey: string;
+  private readonly defaultAssistantId?: string;
+  private readonly defaultPhoneNumberId?: string;
+
+  constructor(options?: { privateKey?: string; assistantId?: string; phoneNumberId?: string }) {
+    this.privateKey = options?.privateKey || process.env.VAPI_PRIVATE_KEY || "";
+    this.defaultAssistantId = options?.assistantId;
+    this.defaultPhoneNumberId = options?.phoneNumberId;
+  }
+
+  private async vapiRequest(endpoint: string, options: RequestInit = {}) {
+    if (!this.privateKey) {
+      throw new Error("VAPI private key missing. Please configure in settings.");
+    }
+    const response = await fetch(`${VAPI_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        "Authorization": `Bearer ${this.privateKey}`,
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`VAPI API error details:`, errorText);
+      throw new Error(`VAPI API error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    return response.json();
+  }
+
   // Get all calls from VAPI
   async getCalls() {
     try {
-      const calls = await vapiRequest("/call");
+      const calls = await this.vapiRequest("/call");
       return calls;
     } catch (error) {
       console.error("Error fetching calls from VAPI:", error);
@@ -36,7 +48,7 @@ export class VapiService {
   // Get specific call details
   async getCall(callId: string) {
     try {
-      const call = await vapiRequest(`/call/${callId}`);
+      const call = await this.vapiRequest(`/call/${callId}`);
       return call;
     } catch (error) {
       console.error("Error fetching call from VAPI:", error);
@@ -45,16 +57,16 @@ export class VapiService {
   }
 
   // Create a new call
-  async createCall(phoneNumber: string, assistantId: string = "b3870ff6-ed43-402e-bdba-14f65567e517") {
+  async createCall(phoneNumber: string, assistantId?: string) {
     try {
       // Format phone number to E.164 format
       const formattedPhone = this.formatToE164(phoneNumber);
       
-      const call = await vapiRequest("/call", {
+      const call = await this.vapiRequest("/call", {
         method: "POST",
         body: JSON.stringify({
-          phoneNumberId: "46b06452-9890-40f3-b046-80a7543f63c3",
-          assistantId: assistantId,
+          phoneNumberId: this.defaultPhoneNumberId,
+          assistantId: assistantId || this.defaultAssistantId,
           customer: {
             number: formattedPhone,
           },
@@ -94,7 +106,7 @@ export class VapiService {
   // Get assistant details
   async getAssistant(assistantId: string = "b3870ff6-ed43-402e-bdba-14f65567e517") {
     try {
-      const assistant = await vapiRequest(`/assistant/${assistantId}`);
+      const assistant = await this.vapiRequest(`/assistant/${assistantId}`);
       return assistant;
     } catch (error) {
       console.error("Error fetching assistant:", error);
@@ -105,7 +117,7 @@ export class VapiService {
   // Update assistant configuration
   async updateAssistant(assistantId: string, updates: any) {
     try {
-      const assistant = await vapiRequest(`/assistant/${assistantId}`, {
+      const assistant = await this.vapiRequest(`/assistant/${assistantId}`, {
         method: "PATCH",
         body: JSON.stringify(updates),
       });
@@ -117,9 +129,9 @@ export class VapiService {
   }
 
   // Get phone number details
-  async getPhoneNumber(phoneNumberId: string = "46b06452-9890-40f3-b046-80a7543f63c3") {
+  async getPhoneNumber(phoneNumberId: string) {
     try {
-      const phoneNumber = await vapiRequest(`/phone-number/${phoneNumberId}`);
+      const phoneNumber = await this.vapiRequest(`/phone-number/${phoneNumberId}`);
       return phoneNumber;
     } catch (error) {
       console.error("Error fetching phone number:", error);
@@ -127,5 +139,6 @@ export class VapiService {
     }
   }
 }
-
-export const vapiService = new VapiService();
+export function createVapiService(options?: { privateKey?: string; assistantId?: string; phoneNumberId?: string }) {
+  return new VapiService(options);
+}

@@ -32,9 +32,10 @@ export default function VapiControl() {
   // Create call mutation
   const createCallMutation = useMutation({
     mutationFn: async (phoneNumber: string) => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : "";
       const response = await fetch("/api/vapi/calls", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ phoneNumber }),
       });
       

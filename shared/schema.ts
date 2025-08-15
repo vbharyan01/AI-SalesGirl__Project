@@ -42,3 +42,33 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// Optional: user settings for Postgres path
+export const userSettings = pgTable("user_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  vapiPrivateKey: text("vapi_private_key"),
+  assistantId: text("assistant_id"),
+  phoneNumberId: text("phone_number_id"),
+  defaultCustomerNumber: text("default_customer_number"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertUserSettingsSchema = createInsertSchema(userSettings).pick({
+  userId: true,
+  vapiPrivateKey: true,
+  assistantId: true,
+  phoneNumberId: true,
+  defaultCustomerNumber: true,
+});
+
+export const updateUserSettingsSchema = z.object({
+  vapiPrivateKey: z.string().optional(),
+  assistantId: z.string().optional(),
+  phoneNumberId: z.string().optional(),
+  defaultCustomerNumber: z.string().optional(),
+});
+
+export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;
+export type UpdateUserSettings = z.infer<typeof updateUserSettingsSchema>;
+export type UserSettings = typeof userSettings.$inferSelect;

@@ -1,0 +1,432 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAPI Call Dashboard - AI Sales Girl</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0070f3',
+                        secondary: '#666666',
+                        success: '#0070f3',
+                        warning: '#ff6b35',
+                        error: '#ee0000'
+                    },
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-inter">
+    <!-- @COMPONENT: DashboardLayout -->
+    <div class="min-h-screen bg-gray-50">
+        <!-- @COMPONENT: Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <h1 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-phone-alt text-primary mr-3"></i>
+                                VAPI Call Dashboard
+                            </h1>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-sm text-gray-500">
+                            <span data-bind="user.name" data-mock="true">AI Sales Girl</span>
+                        </div>
+                        <div class="h-8 w-8 bg-primary rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <!-- @END_COMPONENT: Header -->
+
+        <!-- @COMPONENT: StatsCards -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-phone text-primary text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Total Calls</p>
+                            <p class="text-2xl font-bold text-gray-900" data-bind="stats.totalCalls" data-mock="true">142</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-check-circle text-success text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Completed</p>
+                            <p class="text-2xl font-bold text-gray-900" data-bind="stats.completedCalls" data-mock="true">89</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-clock text-warning text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Pending</p>
+                            <p class="text-2xl font-bold text-gray-900" data-bind="stats.pendingCalls" data-mock="true">31</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-percentage text-primary text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Success Rate</p>
+                            <p class="text-2xl font-bold text-gray-900" data-bind="stats.successRate" data-mock="true">62%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: StatsCards -->
+
+        <!-- @COMPONENT: CallsTable -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <!-- @COMPONENT: TableHeader -->
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900 mb-4 sm:mb-0">Recent Calls</h2>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <!-- @COMPONENT: SearchInput -->
+                            <div class="relative">
+                                <input 
+                                    type="text" 
+                                    placeholder="Search calls..." 
+                                    class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary w-full sm:w-64"
+                                    data-implementation="Implement search functionality"
+                                    data-mock="true"
+                                />
+                                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                            </div>
+                            <!-- @END_COMPONENT: SearchInput -->
+                            
+                            <!-- @COMPONENT: FilterDropdown -->
+                            <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" data-implementation="Implement filter functionality" data-mock="true">
+                                <option>All Status</option>
+                                <option>Completed</option>
+                                <option>Pending</option>
+                                <option>Failed</option>
+                            </select>
+                            <!-- @END_COMPONENT: FilterDropdown -->
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: TableHeader -->
+
+                <!-- @COMPONENT: ResponsiveTable -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recording</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <!-- @MAP: calls.map(call => ( -->
+                            <tr class="hover:bg-gray-50 transition-colors duration-150" data-mock="true">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                                <i class="fas fa-user text-gray-500"></i>
+                                            </div>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900" data-bind="call.name">Sarah Johnson</div>
+                                            <div class="text-sm text-gray-500" data-bind="call.email">sarah.johnson@techcorp.com</div>
+                                            <div class="text-sm text-gray-500" data-bind="call.phone">+1 (555) 123-4567</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900" data-bind="call.company">TechCorp Inc.</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800" data-bind="call.status">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        Completed
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-bind="call.timestamp">
+                                    Dec 15, 2024<br/>
+                                    <span class="text-xs">2:30 PM</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900 max-w-xs truncate" data-bind="call.notes">
+                                        Interested in enterprise package. Follow up next week for demo.
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <button 
+                                        class="text-primary hover:text-blue-700 transition-colors"
+                                        data-implementation="Play recording audio"
+                                        data-bind="call.recording_url"
+                                        data-mock="true"
+                                    >
+                                        <i class="fas fa-play-circle mr-1"></i>
+                                        Play
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <tr class="hover:bg-gray-50 transition-colors duration-150" data-mock="true">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                                <i class="fas fa-user text-gray-500"></i>
+                                            </div>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900" data-bind="call.name">Michael Chen</div>
+                                            <div class="text-sm text-gray-500" data-bind="call.email">m.chen@startup.io</div>
+                                            <div class="text-sm text-gray-500" data-bind="call.phone">+1 (555) 987-6543</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900" data-bind="call.company">Startup.io</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800" data-bind="call.status">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        Pending
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-bind="call.timestamp">
+                                    Dec 15, 2024<br/>
+                                    <span class="text-xs">1:15 PM</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900 max-w-xs truncate" data-bind="call.notes">
+                                        Left voicemail. Requested callback for pricing information.
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <span class="text-gray-400">
+                                        <i class="fas fa-minus-circle mr-1"></i>
+                                        No recording
+                                    </span>
+                                </td>
+                            </tr>
+
+                            <tr class="hover:bg-gray-50 transition-colors duration-150" data-mock="true">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                                <i class="fas fa-user text-gray-500"></i>
+                                            </div>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900" data-bind="call.name">Emily Rodriguez</div>
+                                            <div class="text-sm text-gray-500" data-bind="call.email">e.rodriguez@bizcompany.com</div>
+                                            <div class="text-sm text-gray-500" data-bind="call.phone">+1 (555) 456-7890</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900" data-bind="call.company">BizCompany LLC</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800" data-bind="call.status">
+                                        <i class="fas fa-times-circle mr-1"></i>
+                                        Failed
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-bind="call.timestamp">
+                                    Dec 14, 2024<br/>
+                                    <span class="text-xs">4:45 PM</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900 max-w-xs truncate" data-bind="call.notes">
+                                        Line busy. Retry scheduled for tomorrow morning.
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <span class="text-gray-400">
+                                        <i class="fas fa-minus-circle mr-1"></i>
+                                        No recording
+                                    </span>
+                                </td>
+                            </tr>
+
+                            <tr class="hover:bg-gray-50 transition-colors duration-150" data-mock="true">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                                <i class="fas fa-user text-gray-500"></i>
+                                            </div>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900" data-bind="call.name">David Thompson</div>
+                                            <div class="text-sm text-gray-500" data-bind="call.email">david@consulting.pro</div>
+                                            <div class="text-sm text-gray-500" data-bind="call.phone">+1 (555) 321-0987</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900" data-bind="call.company">Consulting Pro</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800" data-bind="call.status">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        Completed
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-bind="call.timestamp">
+                                    Dec 14, 2024<br/>
+                                    <span class="text-xs">11:20 AM</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900 max-w-xs truncate" data-bind="call.notes">
+                                        Very interested! Scheduled meeting for next Tuesday to discuss implementation.
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <button 
+                                        class="text-primary hover:text-blue-700 transition-colors"
+                                        data-implementation="Play recording audio"
+                                        data-bind="call.recording_url"
+                                        data-mock="true"
+                                    >
+                                        <i class="fas fa-play-circle mr-1"></i>
+                                        Play
+                                    </button>
+                                </td>
+                            </tr>
+                            <!-- @END_MAP )) -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- @END_COMPONENT: ResponsiveTable -->
+
+                <!-- @COMPONENT: Pagination -->
+                <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1 flex justify-between sm:hidden">
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" data-implementation="Previous page functionality" data-mock="true">
+                                Previous
+                            </button>
+                            <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" data-implementation="Next page functionality" data-mock="true">
+                                Next
+                            </button>
+                        </div>
+                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm text-gray-700" data-mock="true">
+                                    Showing <span class="font-medium" data-bind="pagination.start">1</span> to <span class="font-medium" data-bind="pagination.end">10</span> of <span class="font-medium" data-bind="pagination.total">142</span> results
+                                </p>
+                            </div>
+                            <div>
+                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                    <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50" data-implementation="Previous page functionality" data-mock="true">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <button class="bg-primary border-primary text-white relative inline-flex items-center px-4 py-2 border text-sm font-medium" data-mock="true">1</button>
+                                    <button class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium" data-mock="true">2</button>
+                                    <button class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium" data-mock="true">3</button>
+                                    <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50" data-implementation="Next page functionality" data-mock="true">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: Pagination -->
+            </div>
+        </div>
+        <!-- @END_COMPONENT: CallsTable -->
+
+        <!-- @COMPONENT: Footer -->
+        <footer class="bg-white border-t border-gray-200 py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-500">
+                        © 2024 VAPI Call Dashboard. Powered by AI Sales Girl.
+                    </div>
+                    <div class="flex items-center space-x-4 text-sm text-gray-500">
+                        <span class="flex items-center">
+                            <div class="h-2 w-2 bg-green-400 rounded-full mr-2"></div>
+                            System Operational
+                        </span>
+                        <span>Last sync: <span data-bind="lastSync" data-mock="true">2 minutes ago</span></span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+        <!-- @END_COMPONENT: Footer -->
+    </div>
+    <!-- @END_COMPONENT: DashboardLayout -->
+
+    <script>
+        // TODO: Implement real-time updates, search functionality, pagination, and recording playback
+        // TODO: Add API calls to backend endpoints
+        // TODO: Implement state management for filters and search
+        
+        (function() {
+            // Mock functionality for demonstration
+            const searchInput = document.querySelector('input[placeholder="Search calls..."]');
+            const filterSelect = document.querySelector('select');
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    // TODO: Implement search filtering
+                    console.log('Search:', this.value);
+                });
+            }
+            
+            if (filterSelect) {
+                filterSelect.addEventListener('change', function() {
+                    // TODO: Implement status filtering
+                    console.log('Filter:', this.value);
+                });
+            }
+            
+            // Mock recording playback
+            const playButtons = document.querySelectorAll('button[data-implementation*="Play recording"]');
+            playButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // TODO: Implement audio playback functionality
+                    console.log('Playing recording...');
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -1,11 +1,80 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { insertCallSchema } from "@shared/schema";
+import { getStorage } from "./storage";
+import { insertCallSchema, insertUserSchema, updateUserSettingsSchema } from "@shared/schema";
 import { z } from "zod";
-import { vapiService } from "./vapi";
+import { createVapiService } from "./vapi";
+import type { Request, Response, NextFunction } from "express";
+
+const storage = getStorage();
+
+async function authMiddleware(req: Request, res: Response, next: NextFunction) {
+  const token = (req.headers["authorization"] || "").toString().replace(/^Bearer\s+/i, "");
+  if (!token) return res.status(401).json({ message: "Unauthorized" });
+  const userId = await storage.getUserIdBySession(token);
+  if (!userId) return res.status(401).json({ message: "Unauthorized" });
+  (req as any).userId = userId;
+  next();
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth routes
+  app.post("/api/auth/signup", async (req, res) => {
+    try {
+      const { username, password } = insertUserSchema.parse(req.body);
+      const user = await storage.createUser({ username, password });
+      const token = await storage.createSession(user.id);
+      res.status(201).json({ token, user: { id: user.id, username: user.username } });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      const message = (error as Error).message || "Failed to sign up";
+      res.status(400).json({ message });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const body = z.object({ username: z.string(), password: z.string() }).parse(req.body);
+      const user = await storage.verifyPassword(body.username, body.password);
+      if (!user) return res.status(401).json({ message: "Invalid credentials" });
+      const token = await storage.createSession(user.id);
+      res.json({ token, user: { id: user.id, username: user.username } });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to login" });
+    }
+  });
+
+  app.post("/api/auth/logout", authMiddleware, async (req, res) => {
+    const token = (req.headers["authorization"] || "").toString().replace(/^Bearer\s+/i, "");
+    await storage.deleteSession(token);
+    res.json({ ok: true });
+  });
+
+  // User settings
+  app.get("/api/settings", authMiddleware, async (req, res) => {
+    const userId = (req as any).userId as string;
+    const settings = await storage.getUserSettings(userId);
+    res.json(settings || {});
+  });
+
+  app.put("/api/settings", authMiddleware, async (req, res) => {
+    try {
+      const userId = (req as any).userId as string;
+      const update = updateUserSettingsSchema.parse(req.body);
+      const saved = await storage.upsertUserSettings(userId, update);
+      res.json(saved);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update settings" });
+    }
+  });
   // VAPI webhook endpoint - protected with API key
   app.post("/api/logCall", async (req, res) => {
     try {
@@ -51,7 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all calls endpoint
-  app.get("/api/calls", async (req, res) => {
+  app.get("/api/calls", authMiddleware, async (req, res) => {
     try {
       const calls = await storage.getCalls();
       res.json(calls);
@@ -64,7 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get call statistics
-  app.get("/api/stats", async (req, res) => {
+  app.get("/api/stats", authMiddleware, async (req, res) => {
     try {
       const stats = await storage.getCallStats();
       res.json(stats);
@@ -79,9 +148,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // VAPI SDK endpoints
   
   // Get VAPI calls directly from their API
-  app.get("/api/vapi/calls", async (req, res) => {
+  app.get("/api/vapi/calls", authMiddleware, async (req, res) => {
     try {
-      const calls = await vapiService.getCalls();
+      const userId = (req as any).userId as string;
+      const settings = await storage.getUserSettings(userId);
+      const service = createVapiService({
+        privateKey: (settings?.vapiPrivateKey ?? undefined) || process.env.VAPI_PRIVATE_KEY,
+        assistantId: settings?.assistantId ?? undefined,
+        phoneNumberId: settings?.phoneNumberId ?? undefined,
+      });
+      const calls = await service.getCalls();
       res.json(calls);
     } catch (error) {
       console.error("Error fetching VAPI calls:", error);
@@ -92,9 +168,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get specific VAPI call
-  app.get("/api/vapi/calls/:callId", async (req, res) => {
+  app.get("/api/vapi/calls/:callId", authMiddleware, async (req, res) => {
     try {
-      const call = await vapiService.getCall(req.params.callId);
+      const userId = (req as any).userId as string;
+      const settings = await storage.getUserSettings(userId);
+      const service = createVapiService({
+        privateKey: (settings?.vapiPrivateKey ?? undefined) || process.env.VAPI_PRIVATE_KEY,
+        assistantId: settings?.assistantId ?? undefined,
+        phoneNumberId: settings?.phoneNumberId ?? undefined,
+      });
+      const call = await service.getCall(req.params.callId);
       res.json(call);
     } catch (error) {
       console.error("Error fetching VAPI call:", error);
@@ -105,7 +188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new call through VAPI
-  app.post("/api/vapi/calls", async (req, res) => {
+  app.post("/api/vapi/calls", authMiddleware, async (req, res) => {
     try {
       const { phoneNumber, assistantId } = req.body;
       if (!phoneNumber) {
@@ -114,7 +197,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const call = await vapiService.createCall(phoneNumber, assistantId);
+      const userId = (req as any).userId as string;
+      const settings = await storage.getUserSettings(userId);
+      const service = createVapiService({
+        privateKey: (settings?.vapiPrivateKey ?? undefined) || process.env.VAPI_PRIVATE_KEY,
+        assistantId: settings?.assistantId ?? undefined,
+        phoneNumberId: settings?.phoneNumberId ?? undefined,
+      });
+      const call = await service.createCall(phoneNumber, assistantId);
       res.json(call);
     } catch (error) {
       console.error("Error creating VAPI call:", error);
@@ -144,10 +234,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get assistant details
-  app.get("/api/vapi/assistant/:assistantId?", async (req, res) => {
+  app.get("/api/vapi/assistant/:assistantId?", authMiddleware, async (req, res) => {
     try {
-      const assistantId = req.params.assistantId;
-      const assistant = await vapiService.getAssistant(assistantId);
+      const userId = (req as any).userId as string;
+      const settings = await storage.getUserSettings(userId);
+      const service = createVapiService({
+        privateKey: (settings?.vapiPrivateKey ?? undefined) || process.env.VAPI_PRIVATE_KEY,
+        assistantId: settings?.assistantId ?? undefined,
+        phoneNumberId: settings?.phoneNumberId ?? undefined,
+      });
+      const assistantId = req.params.assistantId || settings?.assistantId || "";
+      const assistant = await service.getAssistant(assistantId);
       res.json(assistant);
     } catch (error) {
       console.error("Error fetching VAPI assistant:", error);
@@ -158,10 +255,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get phone number details
-  app.get("/api/vapi/phone/:phoneNumberId?", async (req, res) => {
+  app.get("/api/vapi/phone/:phoneNumberId?", authMiddleware, async (req, res) => {
     try {
-      const phoneNumberId = req.params.phoneNumberId;
-      const phoneNumber = await vapiService.getPhoneNumber(phoneNumberId);
+      const userId = (req as any).userId as string;
+      const settings = await storage.getUserSettings(userId);
+      const service = createVapiService({
+        privateKey: (settings?.vapiPrivateKey ?? undefined) || process.env.VAPI_PRIVATE_KEY,
+        assistantId: settings?.assistantId ?? undefined,
+        phoneNumberId: settings?.phoneNumberId ?? undefined,
+      });
+      const phoneNumberId = req.params.phoneNumberId || settings?.phoneNumberId || "";
+      const phoneNumber = await service.getPhoneNumber(phoneNumberId);
       res.json(phoneNumber);
     } catch (error) {
       console.error("Error fetching VAPI phone number:", error);
