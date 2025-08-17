@@ -18,7 +18,9 @@ import crypto from "crypto";
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  createGoogleUser(user: { googleId: string; username: string; email: string; displayName: string; avatar: string }): Promise<User>;
   verifyPassword(username: string, password: string): Promise<User | undefined>;
   createSession(userId: string): Promise<string>;
   getUserIdBySession(token: string): Promise<string | undefined>;
@@ -46,8 +48,16 @@ export class DatabaseStorage implements IStorage {
     return undefined;
   }
 
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    return undefined;
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     throw new Error("User creation not implemented");
+  }
+
+  async createGoogleUser(userData: { googleId: string; username: string; email: string; displayName: string; avatar: string }): Promise<User> {
+    throw new Error("Google user creation not implemented for Postgres path");
   }
 
   async verifyPassword(_username: string, _password: string): Promise<User | undefined> {
@@ -153,12 +163,42 @@ export class MongoStorage implements IStorage {
     return { id: String(user._id), username: user.username, password: user.passwordHash };
   }
 
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    await this.ensure();
+    const user = await UserModel.findOne({ googleId }).lean();
+    if (!user) return undefined;
+    return { id: String(user._id), username: user.username, password: user.passwordHash };
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     await this.ensure();
     const existing = await UserModel.findOne({ username: insertUser.username }).lean();
     if (existing) throw new Error("Username already exists");
     const passwordHash = await bcrypt.hash(insertUser.password, 12);
-    const created = await UserModel.create({ username: insertUser.username, passwordHash });
+    const created = await UserModel.create({ 
+      username: insertUser.username, 
+      passwordHash,
+      authMethod: 'local'
+    });
+    return { id: String(created._id), username: created.username, password: created.passwordHash };
+  }
+
+  async createGoogleUser(userData: { googleId: string; username: string; email: string; displayName: string; avatar: string }): Promise<User> {
+    await this.ensure();
+    const existing = await UserModel.findOne({ 
+      $or: [{ username: userData.username }, { googleId: userData.googleId }] 
+    }).lean();
+    if (existing) throw new Error("User already exists");
+    
+    const created = await UserModel.create({
+      username: userData.username,
+      googleId: userData.googleId,
+      email: userData.email,
+      displayName: userData.displayName,
+      avatar: userData.avatar,
+      authMethod: 'google'
+    });
+    
     return { id: String(created._id), username: created.username, password: created.passwordHash };
   }
 
@@ -276,8 +316,15 @@ export class MongoStorage implements IStorage {
 }
 
 export function getStorage(): IStorage {
-  if (process.env.USE_MONGO === "1" || process.env.USE_MONGO === "true") {
+  console.log("Storage selection - USE_MONGO:", process.env.USE_MONGO);
+  console.log("Storage selection - NODE_ENV:", process.env.NODE_ENV);
+  
+  // Default to MongoDB for development, or if explicitly set
+  if (process.env.USE_MONGO === "1" || process.env.USE_MONGO === "true" || process.env.NODE_ENV === "development") {
+    console.log("Using MongoStorage");
     return new MongoStorage();
   }
+  
+  console.log("Using DatabaseStorage");
   return new DatabaseStorage();
 }

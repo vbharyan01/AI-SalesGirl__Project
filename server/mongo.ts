@@ -5,22 +5,43 @@ const mongoUrl = process.env.MONGO_URL || process.env.MONGODB_URI || "";
 let isConnected = false;
 
 export async function connectMongo(): Promise<typeof mongoose> {
-  if (isConnected && mongoose.connection.readyState === 1) return mongoose;
+  console.log("MongoDB connection attempt - URL:", mongoUrl);
+  console.log("MongoDB connection attempt - DB Name:", process.env.MONGO_DB_NAME);
+  
+  if (isConnected && mongoose.connection.readyState === 1) {
+    console.log("MongoDB already connected");
+    return mongoose;
+  }
+  
   if (!mongoUrl) {
+    console.error("No MongoDB URL provided");
     throw new Error("MONGO_URL/MONGODB_URI must be set to use Mongo storage");
   }
-  await mongoose.connect(mongoUrl, {
-    dbName: process.env.MONGO_DB_NAME || undefined,
-  });
-  isConnected = true;
-  return mongoose;
+  
+  try {
+    console.log("Connecting to MongoDB...");
+    await mongoose.connect(mongoUrl, {
+      dbName: process.env.MONGO_DB_NAME || undefined,
+    });
+    console.log("MongoDB connected successfully");
+    isConnected = true;
+    return mongoose;
+  } catch (error) {
+    console.error("MongoDB connection error:", error);
+    throw error;
+  }
 }
 
 // User
 const UserSchema = new Schema(
   {
     username: { type: String, required: true, unique: true, index: true },
-    passwordHash: { type: String, required: true },
+    passwordHash: { type: String, required: false }, // Optional for Google OAuth users
+    googleId: { type: String, unique: true, sparse: true, index: true }, // Google OAuth ID
+    email: { type: String, required: false }, // Email from Google
+    displayName: { type: String, required: false }, // Display name from Google
+    avatar: { type: String, required: false }, // Avatar URL from Google
+    authMethod: { type: String, enum: ['local', 'google'], default: 'local' }, // Authentication method
     createdAt: { type: Date, default: Date.now },
   },
   { versionKey: false }

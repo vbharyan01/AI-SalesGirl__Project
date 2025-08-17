@@ -5,6 +5,7 @@ import { insertCallSchema, insertUserSchema, updateUserSettingsSchema } from "@s
 import { z } from "zod";
 import { createVapiService } from "./vapi";
 import type { Request, Response, NextFunction } from "express";
+import passport from "./google-auth";
 
 const storage = getStorage();
 
@@ -53,6 +54,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const token = (req.headers["authorization"] || "").toString().replace(/^Bearer\s+/i, "");
     await storage.deleteSession(token);
     res.json({ ok: true });
+  });
+
+  // Google OAuth routes (only if credentials are configured)
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    app.get("/api/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+
+    app.get("/api/auth/google/callback", 
+      passport.authenticate("google", { failureRedirect: "/login" }),
+      async (req, res) => {
+        try {
+          const user = req.user as any;
+          if (!user) {
+            return res.redirect("/login?error=authentication_failed");
+          }
+          
+          // Create a session token for the user
+          const token = await storage.createSession(user.id);
+          
+          // Redirect to frontend with token
+          res.redirect(`/auth-success?token=${token}&username=${encodeURIComponent(user.username)}`);
+        } catch (error) {
+          console.error("Google OAuth callback error:", error);
+          res.redirect("/login?error=session_creation_failed");
+        }
+      }
+    );
+  }
+
+  // Firebase Authentication route
+  app.post("/api/auth/firebase", async (req, res) => {
+    try {
+      console.log("Firebase auth route called with body:", req.body);
+      const { uid, email, displayName, photoURL } = req.body;
+      
+      if (!uid || !email) {
+        console.log("Missing required fields - uid:", uid, "email:", email);
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      console.log("Checking if user exists with googleId:", uid);
+      // Check if user already exists
+      let user = await storage.getUserByGoogleId(uid);
+      console.log("Existing user found:", user);
+      
+      if (!user) {
+        console.log("Creating new Google user");
+        // Create new user
+        const username = displayName || email.split('@')[0] || `user_${Date.now()}`;
+        console.log("Username generated:", username);
+        
+        user = await storage.createGoogleUser({
+          googleId: uid,
+          username,
+          email: email,
+          displayName: displayName || '',
+          avatar: photoURL || ''
+        });
+        console.log("New user created:", user);
+      }
+
+      console.log("Creating session for user:", user.id);
+      // Create session token
+      const token = await storage.createSession(user.id);
+      console.log("Session token created:", token);
+      
+      res.json({ 
+        token, 
+        user: { 
+          id: user.id, 
+          username: user.username,
+          email: email,
+          displayName: displayName,
+          photoURL: photoURL
+        } 
+      });
+    } catch (error) {
+      console.error("Firebase auth error:", error);
+      res.status(500).json({ message: "Authentication failed" });
+    }
   });
 
   // User settings
