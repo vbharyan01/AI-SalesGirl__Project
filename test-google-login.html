@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Login Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .result { margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 4px; }
+        .log { background-color: #f8f9fa; border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 4px; max-height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔐 Google Login Test</h1>
+    
+    <div class="test-section info">
+        <h3>📋 Test Instructions</h3>
+        <p>This page tests Google login functionality locally.</p>
+        <p><strong>Backend:</strong> http://localhost:5001</p>
+        <p><strong>Frontend:</strong> http://localhost:5173</p>
+    </div>
+
+    <div class="test-section">
+        <h3>1️⃣ Firebase Configuration Test</h3>
+        <button class="btn-primary" onclick="testFirebaseConfig()">Test Firebase Config</button>
+        <div id="firebaseResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2️⃣ Google Login Test</h3>
+        <button class="btn-success" onclick="testGoogleLogin()">Test Google Login</button>
+        <div id="googleResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3️⃣ Backend Integration Test</h3>
+        <button class="btn-primary" onclick="testBackendIntegration()">Test Backend</button>
+        <div id="backendResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4️⃣ Console Log</h3>
+        <div id="consoleLog" class="log"></div>
+        <button class="btn-danger" onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <div class="test-section">
+        <h3>5️⃣ Troubleshooting</h3>
+        <ul>
+            <li><strong>Domain Authorization:</strong> Make sure localhost is authorized in Google Cloud Console</li>
+            <li><strong>Popup Blocking:</strong> Check if popups are blocked by the browser</li>
+            <li><strong>CORS:</strong> Verify backend allows requests from localhost:5173</li>
+            <li><strong>Firebase Rules:</strong> Check if Firebase project allows localhost</li>
+        </ul>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAc6f7ARxwCISUZV-ds_rDLfYdz2Jcyo8o",
+            authDomain: "ai-sales-agents-mvp.firebaseapp.com",
+            projectId: "ai-sales-agents-mvp",
+            storageBucket: "ai-sales-agents-mvp.firebasestorage.app",
+            messagingSenderId: "733461320303",
+            appId: "1:733461320303:web:c391e0e75bbafde67e339a",
+            measurementId: "G-T3QPMRRM9G"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        // Configure Google provider
+        googleProvider.setCustomParameters({
+            prompt: 'select_account'
+        });
+
+        // Make functions globally available
+        window.testFirebaseConfig = async function() {
+            const resultDiv = document.getElementById('firebaseResult');
+            try {
+                log('Testing Firebase configuration...');
+                log(`Firebase app initialized: ${app.name}`);
+                log(`Auth domain: ${firebaseConfig.authDomain}`);
+                log(`Project ID: ${firebaseConfig.projectId}`);
+                
+                resultDiv.innerHTML = '<strong>✅ Success:</strong> Firebase configuration loaded correctly';
+                resultDiv.className = 'result success';
+            } catch (error) {
+                log(`Firebase config error: ${error.message}`);
+                resultDiv.innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        };
+
+        window.testGoogleLogin = async function() {
+            const resultDiv = document.getElementById('googleResult');
+            try {
+                log('Attempting Google login...');
+                log('This will open a popup window for Google authentication');
+                
+                const result = await signInWithPopup(auth, googleProvider);
+                const user = result.user;
+                
+                log(`Google login successful!`);
+                log(`User ID: ${user.uid}`);
+                log(`Email: ${user.email}`);
+                log(`Display Name: ${user.displayName}`);
+                
+                resultDiv.innerHTML = `<strong>✅ Success:</strong> Logged in as ${user.displayName || user.email}`;
+                resultDiv.className = 'result success';
+                
+                // Test backend integration
+                await testBackendIntegration(user);
+                
+            } catch (error) {
+                log(`Google login error: ${error.message}`);
+                log(`Error code: ${error.code}`);
+                
+                if (error.code === 'auth/popup-closed-by-user') {
+                    resultDiv.innerHTML = '<strong>⚠️ Warning:</strong> Popup was closed by user. This is normal if you cancel the login.';
+                } else if (error.code === 'auth/popup-blocked') {
+                    resultDiv.innerHTML = '<strong>❌ Error:</strong> Popup was blocked by browser. Please allow popups for this site.';
+                } else if (error.code === 'auth/unauthorized-domain') {
+                    resultDiv.innerHTML = '<strong>❌ Error:</strong> This domain is not authorized. Add localhost to Google Cloud Console.';
+                } else {
+                    resultDiv.innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+                }
+                resultDiv.className = 'result error';
+            }
+        };
+
+        window.testBackendIntegration = async function(firebaseUser = null) {
+            const resultDiv = document.getElementById('backendResult');
+            try {
+                if (!firebaseUser) {
+                    resultDiv.innerHTML = '<strong>⚠️ Warning:</strong> Please login with Google first to test backend integration.';
+                    return;
+                }
+                
+                log('Testing backend integration...');
+                
+                const response = await fetch('http://localhost:5001/api/auth/firebase', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        uid: firebaseUser.uid,
+                        email: firebaseUser.email,
+                        displayName: firebaseUser.displayName,
+                        photoURL: firebaseUser.photoURL,
+                    }),
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Backend error: ${response.status} - ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log(`Backend integration successful!`);
+                log(`Token received: ${data.token.substring(0, 20)}...`);
+                log(`User created: ${data.user.username}`);
+                
+                resultDiv.innerHTML = `<strong>✅ Success:</strong> Backend integration working. User: ${data.user.username}`;
+                resultDiv.className = 'result success';
+                
+            } catch (error) {
+                log(`Backend integration error: ${error.message}`);
+                resultDiv.innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        };
+
+        // Helper function to log messages
+        function log(message) {
+            const logDiv = document.getElementById('consoleLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        // Clear log function
+        window.clearLog = function() {
+            document.getElementById('consoleLog').innerHTML = '';
+        };
+
+        // Listen for auth state changes
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                log(`Auth state changed: User signed in - ${user.email}`);
+            } else {
+                log('Auth state changed: User signed out');
+            }
+        });
+
+        log('Firebase SDK loaded successfully');
+        log('Ready to test Google login');
+    </script>
+</body>
+</html>

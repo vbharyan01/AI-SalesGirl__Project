@@ -54,6 +54,7 @@ export const getCurrentUser = (): FirebaseUser | null => {
 // Helper function to create or update user in our backend
 const createOrUpdateUser = async (user: AuthUser): Promise<void> => {
   try {
+    // Use relative URL since Vite proxy will forward to backend
     const response = await fetch("/api/auth/firebase", {
       method: "POST",
       headers: {

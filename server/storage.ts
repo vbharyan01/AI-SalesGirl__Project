@@ -17,6 +17,7 @@ import crypto from "crypto";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
+  getUserById(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByGoogleId(googleId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
@@ -40,6 +41,11 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
+    // Not implemented in Postgres path
+    return undefined;
+  }
+
+  async getUserById(id: string): Promise<User | undefined> {
     // Not implemented in Postgres path
     return undefined;
   }
@@ -153,21 +159,28 @@ export class MongoStorage implements IStorage {
     await this.ensure();
     const user = await UserModel.findById(id).lean();
     if (!user) return undefined;
-    return { id: String(user._id), username: user.username, password: user.passwordHash };
+    return { id: String(user._id), username: user.username, password: user.passwordHash || '' };
+  }
+
+  async getUserById(id: string): Promise<User | undefined> {
+    await this.ensure();
+    const user = await UserModel.findById(id).lean();
+    if (!user) return undefined;
+    return { id: String(user._id), username: user.username, password: user.passwordHash || '' };
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     await this.ensure();
     const user = await UserModel.findOne({ username }).lean();
     if (!user) return undefined;
-    return { id: String(user._id), username: user.username, password: user.passwordHash };
+    return { id: String(user._id), username: user.username, password: user.passwordHash || '' };
   }
 
   async getUserByGoogleId(googleId: string): Promise<User | undefined> {
     await this.ensure();
     const user = await UserModel.findOne({ googleId }).lean();
     if (!user) return undefined;
-    return { id: String(user._id), username: user.username, password: user.passwordHash };
+    return { id: String(user._id), username: user.username, password: user.passwordHash || '' };
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -180,7 +193,7 @@ export class MongoStorage implements IStorage {
       passwordHash,
       authMethod: 'local'
     });
-    return { id: String(created._id), username: created.username, password: created.passwordHash };
+    return { id: String(created._id), username: created.username, password: created.passwordHash || '' };
   }
 
   async createGoogleUser(userData: { googleId: string; username: string; email: string; displayName: string; avatar: string }): Promise<User> {
@@ -199,16 +212,16 @@ export class MongoStorage implements IStorage {
       authMethod: 'google'
     });
     
-    return { id: String(created._id), username: created.username, password: created.passwordHash };
+    return { id: String(created._id), username: created.username, password: created.passwordHash || '' };
   }
 
   async verifyPassword(username: string, password: string): Promise<User | undefined> {
     await this.ensure();
     const user = await UserModel.findOne({ username });
-    if (!user) return undefined;
+    if (!user || !user.passwordHash) return undefined;
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return undefined;
-    return { id: String(user._id), username: user.username, password: user.passwordHash };
+    return { id: String(user._id), username: user.username, password: user.passwordHash || '' };
   }
 
   async createSession(userId: string): Promise<string> {

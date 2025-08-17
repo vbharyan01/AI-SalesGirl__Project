@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; width: 200px; }
+        .result { margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Authentication System Test</h1>
+    
+    <div class="test-section info">
+        <h3>📋 Test Instructions</h3>
+        <p>This page tests the complete authentication flow of your AI Sales Girl application.</p>
+        <p><strong>Backend:</strong> http://localhost:5001</p>
+        <p><strong>Frontend:</strong> http://localhost:5173</p>
+    </div>
+
+    <div class="test-section">
+        <h3>1️⃣ User Registration Test</h3>
+        <input type="text" id="signupUsername" placeholder="Username" value="testuser4">
+        <input type="password" id="signupPassword" placeholder="Password" value="testpass123">
+        <button class="btn-primary" onclick="testSignup()">Test Signup</button>
+        <div id="signupResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2️⃣ User Login Test</h3>
+        <input type="text" id="loginUsername" placeholder="Username" value="testuser4">
+        <input type="password" id="loginPassword" placeholder="Password" value="testpass123">
+        <button class="btn-success" onclick="testLogin()">Test Login</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3️⃣ Protected Endpoint Test</h3>
+        <button class="btn-primary" onclick="testProtectedEndpoint()">Test Protected Access</button>
+        <div id="protectedResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4️⃣ Logout Test</h3>
+        <button class="btn-danger" onclick="testLogout()">Test Logout</button>
+        <div id="logoutResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>5️⃣ Frontend Navigation Test</h3>
+        <button class="btn-primary" onclick="openFrontend()">Open Frontend</button>
+        <p>This will open the React frontend in a new tab where you can test the UI.</p>
+    </div>
+
+    <div class="test-section">
+        <h3>📊 Test Results Summary</h3>
+        <div id="summary" class="result"></div>
+    </div>
+
+    <script>
+        let currentToken = '';
+        let testResults = {};
+
+        async function testSignup() {
+            const username = document.getElementById('signupUsername').value;
+            const password = document.getElementById('signupPassword').value;
+            const resultDiv = document.getElementById('signupResult');
+            
+            try {
+                const response = await fetch('http://localhost:5001/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<strong>✅ Success:</strong> User ${data.user.username} created with ID: ${data.user.id}`;
+                    resultDiv.className = 'result success';
+                    testResults.signup = 'PASS';
+                } else {
+                    resultDiv.innerHTML = `<strong>❌ Failed:</strong> ${data.message}`;
+                    resultDiv.className = 'result error';
+                    testResults.signup = 'FAIL';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+                resultDiv.className = 'result error';
+                testResults.signup = 'FAIL';
+            }
+            updateSummary();
+        }
+
+        async function testLogin() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            const resultDiv = document.getElementById('loginResult');
+            
+            try {
+                const response = await fetch('http://localhost:5001/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentToken = data.token;
+                    resultDiv.innerHTML = `<strong>✅ Success:</strong> Logged in as ${data.user.username}. Token: ${data.token.substring(0, 20)}...`;
+                    resultDiv.className = 'result success';
+                    testResults.login = 'PASS';
+                } else {
+                    resultDiv.innerHTML = `<strong>❌ Failed:</strong> ${data.message}`;
+                    resultDiv.className = 'result error';
+                    testResults.login = 'FAIL';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+                resultDiv.className = 'result error';
+                testResults.login = 'FAIL';
+            }
+            updateSummary();
+        }
+
+        async function testProtectedEndpoint() {
+            if (!currentToken) {
+                document.getElementById('protectedResult').innerHTML = '<strong>⚠️ Warning:</strong> Please login first to get a token.';
+                return;
+            }
+            
+            const resultDiv = document.getElementById('protectedResult');
+            
+            try {
+                const response = await fetch('http://localhost:5001/api/settings', {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `<strong>✅ Success:</strong> Protected endpoint accessed. Settings: ${JSON.stringify(data)}`;
+                    resultDiv.className = 'result success';
+                    testResults.protected = 'PASS';
+                } else {
+                    resultDiv.innerHTML = `<strong>❌ Failed:</strong> ${response.status} - ${response.statusText}`;
+                    resultDiv.className = 'result error';
+                    testResults.protected = 'FAIL';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+                resultDiv.className = 'result error';
+                testResults.protected = 'FAIL';
+            }
+            updateSummary();
+        }
+
+        async function testLogout() {
+            if (!currentToken) {
+                document.getElementById('logoutResult').innerHTML = '<strong>⚠️ Warning:</strong> Please login first to get a token.';
+                return;
+            }
+            
+            const resultDiv = document.getElementById('logoutResult');
+            
+            try {
+                const response = await fetch('http://localhost:5001/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = '<strong>✅ Success:</strong> User logged out successfully.';
+                    resultDiv.className = 'result success';
+                    testResults.logout = 'PASS';
+                    currentToken = '';
+                } else {
+                    resultDiv.innerHTML = `<strong>❌ Failed:</strong> ${response.status} - ${response.statusText}`;
+                    resultDiv.className = 'result error';
+                    testResults.logout = 'FAIL';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+                resultDiv.className = 'result error';
+                testResults.logout = 'FAIL';
+            }
+            updateSummary();
+        }
+
+        function openFrontend() {
+            window.open('http://localhost:5173', '_blank');
+        }
+
+        function updateSummary() {
+            const summaryDiv = document.getElementById('summary');
+            const totalTests = Object.keys(testResults).length;
+            const passedTests = Object.values(testResults).filter(result => result === 'PASS').length;
+            
+            if (totalTests === 0) {
+                summaryDiv.innerHTML = 'No tests run yet.';
+                return;
+            }
+            
+            const status = passedTests === totalTests ? '✅ ALL PASSED' : '⚠️ SOME FAILED';
+            summaryDiv.innerHTML = `
+                <strong>${status}</strong><br>
+                Tests Passed: ${passedTests}/${totalTests}<br>
+                <br>
+                <strong>Detailed Results:</strong><br>
+                ${Object.entries(testResults).map(([test, result]) => 
+                    `${test}: ${result === 'PASS' ? '✅' : '❌'}`
+                ).join('<br>')}
+            `;
+            
+            if (passedTests === totalTests) {
+                summaryDiv.className = 'result success';
+            } else {
+                summaryDiv.className = 'result error';
+            }
+        }
+    </script>
+</body>
+</html>
