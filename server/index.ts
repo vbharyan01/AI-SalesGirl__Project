@@ -1,6 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
 import passport from "./google-auth";
 import session from "express-session";
 import MemoryStore from "memorystore";
@@ -97,7 +96,7 @@ app.use((req, res, next) => {
       if (logLine.length > 80) {
         logLine = logLine.slice(0, 79) + "…";
       }
-      log(logLine);
+      console.log(logLine);
     }
   });
 
@@ -111,16 +110,17 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
     res.status(status).json({ message });
-    throw err;
+    console.error("Server error:", err);
   });
 
-  // Importantly only setup Vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes.
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
+  // Only setup Vite in development
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      const { setupVite } = await import('./vite');
+      await setupVite(app, server);
+    } catch (error) {
+      console.log("Vite not available in production");
+    }
   }
 
   // Use a port that is not blocked by macOS system services.
