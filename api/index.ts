@@ -28,7 +28,7 @@ app.use(express.urlencoded({ extended: false }));
 
 // Session configuration for Google OAuth
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  secret: process.env.VERCEL_SESSION_SECRET || process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
   saveUninitialized: false,
   store: new (MemoryStore(session))({

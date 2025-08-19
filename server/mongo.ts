@@ -2,8 +2,8 @@ import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 
 // Get MongoDB connection URL with fallbacks
 const getMongoUrl = () => {
-  // Priority order: MONGO_URL > MONGODB_URI > localhost fallback
-  const mongoUrl = process.env.MONGO_URL || process.env.MONGODB_URI;
+  // Priority order: VERCEL_MONGO_URL > MONGO_URL > MONGODB_URI > localhost fallback
+  const mongoUrl = process.env.VERCEL_MONGO_URL || process.env.MONGO_URL || process.env.MONGODB_URI;
   
   if (mongoUrl) {
     return mongoUrl;
@@ -14,11 +14,11 @@ const getMongoUrl = () => {
     return 'mongodb://localhost:27017';
   }
   
-  throw new Error("MONGO_URL or MONGODB_URI must be set for production");
+  throw new Error("VERCEL_MONGO_URL, MONGO_URL, or MONGODB_URI must be set for production");
 };
 
 const mongoUrl = getMongoUrl();
-const dbName = process.env.MONGO_DB_NAME || 'ai_sales_girl';
+const dbName = process.env.VERCEL_MONGO_DB_NAME || process.env.MONGO_DB_NAME || 'ai_sales_girl';
 
 let isConnected = false;
 
