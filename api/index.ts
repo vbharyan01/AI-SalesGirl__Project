@@ -8,6 +8,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Get the requesting origin
   const origin = req.headers.origin;
   
+  // Log the request details for debugging
+  console.log('API Request:', {
+    method: req.method,
+    path: fullPath,
+    origin: origin,
+    userAgent: req.headers['user-agent']
+  });
+  
   // Set CORS headers dynamically based on the requesting origin
   if (origin) {
     // Allow both Vercel URLs and localhost
@@ -20,6 +28,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     if (allowedOrigins.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
+      console.log('CORS Origin set to:', origin);
+    } else {
+      console.log('Origin not allowed:', origin);
     }
   }
   
@@ -27,6 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
+  // Handle preflight OPTIONS request first
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
