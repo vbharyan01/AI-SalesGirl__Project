@@ -5,8 +5,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const path = req.url || '';
   const fullPath = path.startsWith('/api') ? path : `/api${path}`;
 
-  // Set CORS headers for the custom domain
-  res.setHeader('Access-Control-Allow-Origin', 'https://ai-sales-agent.cehpoint.co.in');
+  // Set CORS headers for the current Vercel URL
+  res.setHeader('Access-Control-Allow-Origin', 'https://ai-sales-girl-project-hkr4.vercel.app');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -24,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           message: 'AI Sales Girl API is running on Vercel!',
           timestamp: new Date().toISOString(),
           status: 'success',
-          domain: 'ai-sales-agent.cehpoint.co.in'
+          url: 'https://ai-sales-girl-project-hkr4.vercel.app'
         });
 
       case '/api/auth/login':
@@ -32,7 +32,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           message: 'Login endpoint - Vercel deployment successful!',
           endpoint: fullPath,
           method: req.method,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          url: 'https://ai-sales-girl-project-hkr4.vercel.app'
         });
 
       case '/api/auth/signup':
@@ -40,7 +41,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           message: 'Signup endpoint - Vercel deployment successful!',
           endpoint: fullPath,
           method: req.method,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          url: 'https://ai-sales-girl-project-hkr4.vercel.app'
         });
 
       case '/api/vapi/calls':
@@ -49,7 +51,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           endpoint: fullPath,
           method: req.method,
           timestamp: new Date().toISOString(),
-          data: [] // Empty array for now
+          data: [], // Empty array for now
+          url: 'https://ai-sales-girl-project-hkr4.vercel.app'
         });
 
       case '/api/stats':
@@ -62,7 +65,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             totalCalls: 0,
             completedCalls: 0,
             pendingCalls: 0
-          }
+          },
+          url: 'https://ai-sales-girl-project-hkr4.vercel.app'
         });
 
       default:
@@ -74,7 +78,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           timestamp: new Date().toISOString(),
           note: 'This is a test response. Full functionality will be implemented next.',
           url: req.url,
-          path: fullPath
+          path: fullPath,
+          vercelUrl: 'https://ai-sales-girl-project-hkr4.vercel.app'
         });
     }
   } catch (error) {
