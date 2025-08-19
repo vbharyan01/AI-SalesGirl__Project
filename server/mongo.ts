@@ -1,33 +1,96 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 
-const mongoUrl = process.env.MONGO_URL || process.env.MONGODB_URI || "";
+// Get MongoDB connection URL with fallbacks
+const getMongoUrl = () => {
+  // Priority order: MONGO_URL > MONGODB_URI > localhost fallback
+  const mongoUrl = process.env.MONGO_URL || process.env.MONGODB_URI;
+  
+  if (mongoUrl) {
+    return mongoUrl;
+  }
+  
+  // Fallback to localhost for development
+  if (process.env.NODE_ENV === 'development') {
+    return 'mongodb://localhost:27017';
+  }
+  
+  throw new Error("MONGO_URL or MONGODB_URI must be set for production");
+};
+
+const mongoUrl = getMongoUrl();
+const dbName = process.env.MONGO_DB_NAME || 'ai_sales_girl';
 
 let isConnected = false;
 
 export async function connectMongo(): Promise<typeof mongoose> {
   console.log("MongoDB connection attempt - URL:", mongoUrl);
-  console.log("MongoDB connection attempt - DB Name:", process.env.MONGO_DB_NAME);
+  console.log("MongoDB connection attempt - DB Name:", dbName);
+  console.log("MongoDB connection attempt - Environment:", process.env.NODE_ENV);
   
   if (isConnected && mongoose.connection.readyState === 1) {
     console.log("MongoDB already connected");
     return mongoose;
   }
   
-  if (!mongoUrl) {
-    console.error("No MongoDB URL provided");
-    throw new Error("MONGO_URL/MONGODB_URI must be set to use Mongo storage");
-  }
-  
   try {
     console.log("Connecting to MongoDB...");
-    await mongoose.connect(mongoUrl, {
-      dbName: process.env.MONGO_DB_NAME || undefined,
-    });
+    
+    // Connection options
+    const options = {
+      dbName: dbName,
+      // Connection pooling
+      maxPoolSize: 10,
+      minPoolSize: 1,
+      // Timeout settings
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      // Retry settings
+      retryWrites: true,
+      w: 'majority',
+      // SSL settings for Atlas
+      ssl: mongoUrl.includes('mongodb+srv://'),
+      // Authentication
+      authSource: 'admin',
+    };
+    
+    await mongoose.connect(mongoUrl, options);
     console.log("MongoDB connected successfully");
     isConnected = true;
+    
+    // Handle connection events
+    mongoose.connection.on('error', (error) => {
+      console.error('MongoDB connection error:', error);
+      isConnected = false;
+    });
+    
+    mongoose.connection.on('disconnected', () => {
+      console.log('MongoDB disconnected');
+      isConnected = false;
+    });
+    
+    mongoose.connection.on('reconnected', () => {
+      console.log('MongoDB reconnected');
+      isConnected = true;
+    });
+    
     return mongoose;
   } catch (error) {
     console.error("MongoDB connection error:", error);
+    isConnected = false;
+    
+    // Provide helpful error messages
+    if (error instanceof Error) {
+      if (error.message.includes('ENOTFOUND')) {
+        console.error("DNS resolution failed. Check your MongoDB connection string.");
+        console.error("For local development, ensure MongoDB is running: brew services start mongodb-community");
+        console.error("For production, verify your MongoDB Atlas connection string.");
+      } else if (error.message.includes('ECONNREFUSED')) {
+        console.error("Connection refused. Check if MongoDB is running on the specified port.");
+      } else if (error.message.includes('Authentication failed')) {
+        console.error("Authentication failed. Check your username and password.");
+      }
+    }
+    
     throw error;
   }
 }

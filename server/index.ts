@@ -7,16 +7,44 @@ import MemoryStore from "memorystore";
 
 const app = express();
 
-// CORS middleware for development
+// Get CORS origins from environment or use defaults
+const getCorsOrigins = () => {
+  const corsOrigins = process.env.CORS_ORIGINS;
+  if (corsOrigins) {
+    return corsOrigins.split(',').map(origin => origin.trim());
+  }
+  
+  // Default origins based on environment
+  if (process.env.NODE_ENV === 'production') {
+    return ['https://your-domain.vercel.app']; // Update this with your actual domain
+  }
+  
+  return ['http://localhost:5173', 'http://localhost:3000'];
+};
+
+const corsOrigins = getCorsOrigins();
+
+// CORS middleware for development and production
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+  const origin = req.headers.origin;
+  
+  // Check if origin is allowed
+  if (origin && corsOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else if (process.env.NODE_ENV === 'development') {
+    // In development, allow localhost origins
+    res.header('Access-Control-Allow-Origin', req.headers.origin || 'http://localhost:5173');
+  }
+  
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   res.header('Access-Control-Allow-Credentials', 'true');
   
   // Fix for Cross-Origin-Opener-Policy - more permissive for development
-  res.header('Cross-Origin-Opener-Policy', 'unsafe-none');
-  res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  if (process.env.NODE_ENV === 'development') {
+    res.header('Cross-Origin-Opener-Policy', 'unsafe-none');
+    res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  }
   
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
@@ -40,6 +68,7 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
   }
 }));
 
@@ -98,11 +127,9 @@ app.use((req, res, next) => {
   // Example: 5001, or any available port.
   const port = parseInt(process.env.PORT || '5001', 10);
 
-  // Removed reusePort option to avoid ENOTSUP error
-  server.listen({
-    port,
-    host: "127.0.0.1"
-  }, () => {
-    log(`serving on port ${port}`);
+  server.listen(port, () => {
+    console.log(`[express] serving on port ${port}`);
+    console.log(`[express] environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`[express] CORS origins: ${corsOrigins.join(', ')}`);
   });
 })();
