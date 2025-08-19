@@ -6,6 +6,9 @@ import MemoryStore from "memorystore";
 
 const app = express();
 
+// Export the app for Vercel
+export { app };
+
 // Get CORS origins from environment or use defaults
 const getCorsOrigins = () => {
   const corsOrigins = process.env.CORS_ORIGINS;
