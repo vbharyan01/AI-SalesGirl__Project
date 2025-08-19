@@ -9,6 +9,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Phone, CheckCircle, Clock, TrendingUp, User, Play, MinusCircle, Search } from "lucide-react";
 import type { Call } from "@shared/schema";
 
+// Extended Call interface to handle both formats
+interface ExtendedCall extends Call {
+  // VAPI API format properties
+  assistantId?: string;
+  assistant?: { name: string };
+  customer?: { 
+    number: string; 
+    name: string 
+  };
+  duration?: number;
+  createdAt?: string;
+}
+
 interface CallStats {
   totalCalls: number;
   completedCalls: number;
@@ -21,22 +34,66 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: calls = [], isLoading: callsLoading } = useQuery<Call[]>({
-    queryKey: ['/api/calls'],
+  // Use the VAPI calls endpoint which has demo data
+  const { data: calls = [], isLoading: callsLoading } = useQuery<ExtendedCall[]>({
+    queryKey: ['/api/vapi/calls'],
+    queryFn: async () => {
+      const response = await fetch('/api/vapi/calls');
+      if (!response.ok) {
+        throw new Error('Failed to fetch calls');
+      }
+      return response.json();
+    }
   });
 
+  // Get stats from the stats endpoint
   const { data: stats, isLoading: statsLoading } = useQuery<CallStats>({
     queryKey: ['/api/stats'],
+    queryFn: async () => {
+      const response = await fetch('/api/stats');
+      if (!response.ok) {
+        throw new Error('Failed to fetch stats');
+      }
+      return response.json();
+    }
   });
+
+  // Helper function to get call display data
+  const getCallDisplayData = (call: ExtendedCall) => {
+    // Check if it's VAPI format
+    if (call.assistant && call.customer) {
+      return {
+        name: call.customer.name,
+        company: call.assistant.name,
+        email: `customer@${call.assistant.name.toLowerCase().replace(/\s+/g, '')}.com`,
+        phone: call.customer.number,
+        status: call.status,
+        timestamp: call.createdAt || call.timestamp,
+        duration: call.duration
+      };
+    }
+    
+    // Fallback to shared schema format
+    return {
+      name: call.name || 'Unknown',
+      company: call.company || 'Unknown Company',
+      email: call.email || 'No email',
+      phone: call.phone || 'No phone',
+      status: call.status,
+      timestamp: call.timestamp,
+      duration: 0
+    };
+  };
 
   // Filter calls based on search term and status
   const filteredCalls = calls.filter(call => {
+    const displayData = getCallDisplayData(call);
     const matchesSearch = searchTerm === "" || 
-      call.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      call.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      call.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      displayData.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      displayData.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      displayData.email.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === "all" || call.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || displayData.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
@@ -81,6 +138,13 @@ export default function Dashboard() {
     };
   };
 
+  const formatDuration = (seconds: number) => {
+    if (!seconds) return '0s';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return minutes > 0 ? `${minutes}m ${remainingSeconds}s` : `${remainingSeconds}s`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -103,246 +167,206 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Stats Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Phone className="text-primary text-2xl mr-4" />
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Total Calls</p>
-                  {statsLoading ? (
-                    <Skeleton className="h-8 w-16" />
-                  ) : (
-                    <p className="text-2xl font-bold text-gray-900">{stats?.totalCalls || 0}</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {statsLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-6">
+                  <Skeleton className="h-8 w-24 mb-2" />
+                  <Skeleton className="h-6 w-16" />
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Total Calls</p>
+                      <p className="text-2xl font-bold text-gray-900">{stats?.totalCalls || 0}</p>
+                    </div>
+                    <Phone className="h-8 w-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <CheckCircle className="text-green-600 text-2xl mr-4" />
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Completed</p>
-                  {statsLoading ? (
-                    <Skeleton className="h-8 w-16" />
-                  ) : (
-                    <p className="text-2xl font-bold text-gray-900">{stats?.completedCalls || 0}</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Completed</p>
+                      <p className="text-2xl font-bold text-green-600">{stats?.completedCalls || 0}</p>
+                    </div>
+                    <CheckCircle className="h-8 w-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Clock className="text-yellow-600 text-2xl mr-4" />
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Pending</p>
-                  {statsLoading ? (
-                    <Skeleton className="h-8 w-16" />
-                  ) : (
-                    <p className="text-2xl font-bold text-gray-900">{stats?.pendingCalls || 0}</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Pending</p>
+                      <p className="text-2xl font-bold text-yellow-600">{stats?.pendingCalls || 0}</p>
+                    </div>
+                    <Clock className="h-8 w-8 text-yellow-600" />
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <TrendingUp className="text-primary text-2xl mr-4" />
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Success Rate</p>
-                  {statsLoading ? (
-                    <Skeleton className="h-8 w-16" />
-                  ) : (
-                    <p className="text-2xl font-bold text-gray-900">{stats?.successRate || 0}%</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Success Rate</p>
+                      <p className="text-2xl font-bold text-blue-600">{stats?.successRate || 0}%</p>
+                    </div>
+                    <TrendingUp className="h-8 w-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
+
+        {/* Search and Filter */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search by name, company, or email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Calls Table */}
         <Card>
-          {/* Table Header */}
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-0">Recent Calls</h2>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative">
-                  <Input
-                    type="text"
-                    placeholder="Search calls..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-full sm:w-64"
-                  />
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-32">
-                    <SelectValue placeholder="All Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="failed">Failed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">Call History</h2>
+              <Button className="bg-primary hover:bg-primary/90">
+                <Play className="w-4 h-4 mr-2" />
+                New Call
+              </Button>
             </div>
-          </div>
 
-          {/* Table Content */}
-          <div className="overflow-x-auto">
             {callsLoading ? (
-              <div className="p-6 space-y-4">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex items-center space-x-4">
-                    <Skeleton className="h-10 w-10 rounded-full" />
-                    <div className="space-y-2">
+              <div className="space-y-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="flex-1 space-y-2">
                       <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-3 w-48" />
+                      <Skeleton className="h-3 w-24" />
                     </div>
+                    <Skeleton className="h-6 w-20" />
                   </div>
                 ))}
               </div>
             ) : filteredCalls.length === 0 ? (
               <div className="text-center py-12">
-                <Phone className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No calls found</h3>
-                <p className="text-gray-500">
-                  {calls.length === 0 
-                    ? "No calls have been logged yet. When VAPI sends webhook data, calls will appear here."
-                    : "No calls match your current search and filter criteria."
+                <Phone className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No calls found</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {searchTerm || statusFilter !== "all" 
+                    ? "Try adjusting your search or filter criteria."
+                    : "Get started by making your first call."
                   }
                 </p>
               </div>
             ) : (
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Contact
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Company
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Notes
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Recording
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredCalls.map((call) => {
-                    const { date, time } = formatDate(call.timestamp.toString());
-                    return (
-                      <tr key={call.id} className="hover:bg-gray-50 transition-colors duration-150">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                <User className="text-gray-500 h-5 w-5" />
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Customer
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Company
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Contact
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Duration
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredCalls.map((call) => {
+                      const displayData = getCallDisplayData(call);
+                      const { date, time } = formatDate(displayData.timestamp);
+                      
+                      return (
+                        <tr key={call.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="h-10 w-10 bg-primary rounded-full flex items-center justify-center">
+                                <User className="text-white text-sm" />
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {displayData.name}
+                                </div>
                               </div>
                             </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{call.name}</div>
-                              {call.email && (
-                                <div className="text-sm text-gray-500">{call.email}</div>
-                              )}
-                              {call.phone && (
-                                <div className="text-sm text-gray-500">{call.phone}</div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{call.company || '-'}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(call.status)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {date}<br/>
-                          <span className="text-xs">{time}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 max-w-xs truncate">
-                            {call.notes || '-'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {call.recording_url ? (
-                            <Button 
-                              variant="ghost"
-                              size="sm"
-                              className="text-primary hover:text-blue-700 transition-colors"
-                              onClick={() => call.recording_url && window.open(call.recording_url, '_blank')}
-                            >
-                              <Play className="w-4 h-4 mr-1" />
-                              Play
-                            </Button>
-                          ) : (
-                            <span className="text-gray-400 flex items-center">
-                              <MinusCircle className="w-4 h-4 mr-1" />
-                              No recording
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{displayData.company}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{displayData.email}</div>
+                            <div className="text-sm text-gray-500">{displayData.phone}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {getStatusBadge(displayData.status)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatDuration(displayData.duration)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div>{date}</div>
+                            <div>{time}</div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
-          </div>
+          </CardContent>
         </Card>
-
-        {/* Footer */}
-        <footer className="mt-8 py-8 bg-gray-800 text-white rounded-lg">
-          <div className="px-6 py-4">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <div className="mb-4 md:mb-0">
-                <h3 className="text-lg font-semibold">INTELA AI Agent Solution</h3>
-                <p className="text-gray-300 text-sm">Professional AI-powered sales communication platform</p>
-              </div>
-              <div className="text-center md:text-right">
-                <p className="text-sm text-gray-300">Developed by</p>
-                <p className="text-xl font-bold">Cehpoint</p>
-                <p className="text-xs text-gray-400">IT & Cyber Security Company</p>
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-700 flex items-center justify-between text-sm">
-              <div>© 2025 INTELA AI Agent Solution. All rights reserved.</div>
-              <div className="flex items-center space-x-4">
-                <span className="flex items-center">
-                  <div className="h-2 w-2 bg-green-400 rounded-full mr-2"></div>
-                  System Operational
-                </span>
-                <span>Connected to VAPI</span>
-              </div>
-            </div>
-          </div>
-        </footer>
       </div>
     </div>
   );
