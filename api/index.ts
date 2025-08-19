@@ -45,6 +45,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           url: 'https://ai-sales-girl-project-hkr4.vercel.app'
         });
 
+      case '/api/auth/firebase':
+        return res.status(200).json({
+          message: 'Firebase OAuth endpoint - Vercel deployment successful!',
+          endpoint: fullPath,
+          method: req.method,
+          timestamp: new Date().toISOString(),
+          url: 'https://ai-sales-girl-project-hkr4.vercel.app',
+          token: 'demo-token-' + Date.now(), // Demo token for testing
+          user: {
+            uid: req.body?.uid || 'demo-uid',
+            username: req.body?.displayName || 'demo-user',
+            email: req.body?.email || 'demo@example.com'
+          }
+        });
+
       case '/api/vapi/calls':
         return res.status(200).json({
           message: 'VAPI calls endpoint - Vercel deployment successful!',

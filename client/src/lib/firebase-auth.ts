@@ -1,9 +1,10 @@
-import { 
-  signInWithPopup, 
+import {
+  signInWithPopup,
   signOut as firebaseSignOut,
-  type User as FirebaseUser 
+  type User as FirebaseUser
 } from "firebase/auth";
 import { auth, googleProvider } from "./firebase";
+import { config } from "./config";
 
 export interface AuthUser {
   id: string;
@@ -16,7 +17,7 @@ export const signInWithGoogle = async (): Promise<AuthUser> => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
-    
+
     // Convert Firebase user to our app's user format
     const authUser: AuthUser = {
       id: user.uid,
@@ -27,7 +28,7 @@ export const signInWithGoogle = async (): Promise<AuthUser> => {
 
     // Send user data to our backend to create/update user
     await createOrUpdateUser(authUser);
-    
+
     return authUser;
   } catch (error) {
     console.error("Google sign-in error:", error);
@@ -54,8 +55,9 @@ export const getCurrentUser = (): FirebaseUser | null => {
 // Helper function to create or update user in our backend
 const createOrUpdateUser = async (user: AuthUser): Promise<void> => {
   try {
-    // Use relative URL since Vite proxy will forward to backend
-    const response = await fetch("/api/auth/firebase", {
+    // Use configuration to get proper API URL
+    const apiUrl = config.getApiUrl("/api/auth/firebase");
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -73,7 +75,7 @@ const createOrUpdateUser = async (user: AuthUser): Promise<void> => {
     }
 
     const data = await response.json();
-    
+
     // Store the authentication token
     if (data.token) {
       localStorage.setItem("auth_token", data.token);

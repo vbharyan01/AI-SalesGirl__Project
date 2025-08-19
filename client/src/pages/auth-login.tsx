@@ -7,6 +7,7 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { signInWithGoogle } from "@/lib/firebase-auth";
+import { config } from "@/lib/config";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -15,22 +16,29 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
-  const submit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(config.getApiUrl("/api/auth/login"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ username, password }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login failed");
-      localStorage.setItem("auth_token", data.token);
-      toast({ title: "Welcome", description: `Logged in as ${data.user.username}` });
-      navigate("/vapi");
+
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("auth_token", data.token);
+        toast({ title: "Welcome", description: `Logged in as ${data.user.username}` });
+        navigate("/vapi");
+      } else {
+        const errorData = await res.json();
+        toast({ title: "Login failed", description: errorData.message || "Login failed", variant: "destructive" });
+      }
     } catch (err: any) {
-      toast({ title: "Login failed", description: err.message, variant: "destructive" });
+      toast({ title: "Login failed", description: err.message || "Network error. Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -81,7 +89,7 @@ export default function LoginPage() {
           </CardHeader>
           
           <CardContent className="space-y-6">
-            <form className="space-y-4" onSubmit={submit}>
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700">Username</Label>
                 <div className="relative">

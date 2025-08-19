@@ -7,6 +7,7 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { signInWithGoogle } from "@/lib/firebase-auth";
+import { config } from "@/lib/config";
 
 export default function SignupPage() {
   const [username, setUsername] = useState("");
@@ -15,22 +16,29 @@ export default function SignupPage() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
-  const submit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/signup", {
+      const res = await fetch(config.getApiUrl("/api/auth/signup"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ username, password }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Signup failed");
-      localStorage.setItem("auth_token", data.token);
-      toast({ title: "Account created", description: `Welcome ${data.user.username}` });
-      navigate("/settings");
+
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("auth_token", data.token);
+        toast({ title: "Account created", description: `Welcome ${data.user.username}` });
+        navigate("/settings");
+      } else {
+        const errorData = await res.json();
+        toast({ title: "Signup failed", description: errorData.message || "Signup failed", variant: "destructive" });
+      }
     } catch (err: any) {
-      toast({ title: "Signup failed", description: err.message, variant: "destructive" });
+      toast({ title: "Signup failed", description: err.message || "Network error. Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -81,7 +89,7 @@ export default function SignupPage() {
           </CardHeader>
           
           <CardContent className="space-y-6">
-            <form className="space-y-4" onSubmit={submit}>
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700">Username</Label>
                 <div className="relative">
