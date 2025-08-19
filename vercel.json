@@ -17,7 +17,7 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://ai-sales-girl-project-hkr4.vercel.app, http://localhost:5173, http://localhost:3000"
+          "value": "https://ai-sales-girl-project.vercel.app, https://ai-sales-girl-project-hkr4.vercel.app, http://localhost:5173, http://localhost:3000"
         },
         {
           "key": "Access-Control-Allow-Methods",

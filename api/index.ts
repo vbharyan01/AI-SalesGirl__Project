@@ -5,8 +5,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const path = req.url || '';
   const fullPath = path.startsWith('/api') ? path : `/api${path}`;
 
-  // Set CORS headers for the current Vercel URL
-  res.setHeader('Access-Control-Allow-Origin', 'https://ai-sales-girl-project-hkr4.vercel.app');
+  // Get the requesting origin
+  const origin = req.headers.origin;
+  
+  // Set CORS headers dynamically based on the requesting origin
+  if (origin) {
+    // Allow both Vercel URLs and localhost
+    const allowedOrigins = [
+      'https://ai-sales-girl-project.vercel.app',
+      'https://ai-sales-girl-project-hkr4.vercel.app',
+      'http://localhost:5173',
+      'http://localhost:3000'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+  }
+  
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -33,7 +49,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           endpoint: fullPath,
           method: req.method,
           timestamp: new Date().toISOString(),
-          url: 'https://ai-sales-girl-project-hkr4.vercel.app'
+          url: 'https://ai-sales-girl-project-hkr4.vercel.app',
+          debug: {
+            origin: req.headers.origin,
+            userAgent: req.headers['user-agent'],
+            cors: 'enabled'
+          }
         });
 
       case '/api/auth/signup':
@@ -42,7 +63,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           endpoint: fullPath,
           method: req.method,
           timestamp: new Date().toISOString(),
-          url: 'https://ai-sales-girl-project-hkr4.vercel.app'
+          url: 'https://ai-sales-girl-project-hkr4.vercel.app',
+          debug: {
+            origin: req.headers.origin,
+            userAgent: req.headers['user-agent'],
+            cors: 'enabled'
+          }
         });
 
       case '/api/auth/firebase':
