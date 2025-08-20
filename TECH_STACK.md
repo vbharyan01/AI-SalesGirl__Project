@@ -14,7 +14,7 @@ This document provides a comprehensive overview of all technologies, frameworks,
                               │ HTTP/HTTPS
                               │ RESTful APIs
                               ▼
-┌─────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────
 │                    BACKEND (Server-Side)                    │
 ├─────────────────────────────────────────────────────────────┤
 │ Node.js + Express.js + TypeScript + MongoDB + JWT Auth     │
