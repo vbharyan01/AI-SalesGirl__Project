@@ -327,10 +327,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new call through VAPI
   app.post("/api/vapi/calls", authMiddleware, async (req, res) => {
     try {
-      const { phoneNumber, assistantId } = req.body;
+      const { phoneNumber, assistantId, testMode } = req.body;
       if (!phoneNumber) {
         return res.status(400).json({ 
           message: "Phone number is required" 
+        });
+      }
+      
+      // If test mode, just validate the configuration without making a real call
+      if (testMode === true || testMode === "true") {
+        console.log("Test mode detected, validating configuration...");
+        const userId = (req as any).userId as string;
+        const settings = await storage.getUserSettings(userId);
+        
+        console.log("User settings:", { 
+          hasPrivateKey: !!settings?.vapiPrivateKey, 
+          hasAssistantId: !!settings?.assistantId, 
+          hasPhoneNumberId: !!settings?.phoneNumberId 
+        });
+        
+        if (!settings?.vapiPrivateKey) {
+          return res.status(400).json({ 
+            message: "VAPI private key not configured",
+            details: "Please configure your VAPI credentials in settings"
+          });
+        }
+        
+        if (!settings?.assistantId) {
+          return res.status(400).json({ 
+            message: "Assistant ID not configured",
+            details: "Please configure your VAPI assistant ID in settings"
+          });
+        }
+        
+        if (!settings?.phoneNumberId) {
+          return res.status(400).json({ 
+            message: "Phone number ID not configured",
+            details: "Please configure your VAPI phone number ID in settings"
+          });
+        }
+        
+        console.log("Configuration validation passed, returning test response");
+        return res.json({ 
+          message: "Configuration test passed",
+          testMode: true,
+          phoneNumber,
+          assistantId: settings.assistantId,
+          phoneNumberId: settings.phoneNumberId,
+          status: "ready_for_testing"
         });
       }
       

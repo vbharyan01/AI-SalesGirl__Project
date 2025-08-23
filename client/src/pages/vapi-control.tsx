@@ -187,6 +187,36 @@ export default function VapiControl() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Configuration Notice */}
+        <Card className="mb-8 border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="flex items-center text-blue-900">
+              <Settings className="mr-2 text-blue-600" />
+              Configure Your VAPI Credentials
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="text-blue-800">
+                <p className="mb-2">
+                  <strong>Important:</strong> To use this system with your own VAPI account, you need to configure your credentials first.
+                </p>
+                <p className="text-sm">
+                  Go to Settings → Credentials tab to enter your VAPI Private Key, Assistant ID, and Phone Number ID.
+                </p>
+              </div>
+              <Button 
+                onClick={() => window.location.href = '/settings'} 
+                variant="outline"
+                className="border-blue-300 text-blue-700 hover:bg-blue-100"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Go to Settings
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Search Section */}
         <Card className="mb-8">
           <CardHeader>
