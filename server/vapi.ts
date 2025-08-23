@@ -138,6 +138,29 @@ export class VapiService {
       throw error;
     }
   }
+
+  // New method: Get detailed call information
+  async getCallDetails(callId: string): Promise<any> {
+    return this.vapiRequest(`/calls/${callId}`);
+  }
+
+  // New method: Cancel/End an active call
+  async cancelCall(callId: string): Promise<any> {
+    return this.vapiRequest(`/calls/${callId}/end`, {
+      method: 'POST',
+      body: JSON.stringify({ status: 'ended' })
+    });
+  }
+
+  // New method: Get call transcripts
+  async getCallTranscript(callId: string): Promise<any> {
+    return this.vapiRequest(`/calls/${callId}/transcript`);
+  }
+
+  // New method: Get call analytics
+  async getCallAnalytics(callId: string): Promise<any> {
+    return this.vapiRequest(`/calls/${callId}/analytics`);
+  }
 }
 export function createVapiService(options?: { privateKey?: string; assistantId?: string; phoneNumberId?: string }) {
   return new VapiService(options);

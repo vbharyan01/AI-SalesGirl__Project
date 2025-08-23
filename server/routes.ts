@@ -304,9 +304,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get specific VAPI call
+  // New endpoint: Get detailed call status
   app.get("/api/vapi/calls/:callId", authMiddleware, async (req, res) => {
     try {
+      const { callId } = req.params;
       const userId = (req as any).userId as string;
       const settings = await storage.getUserSettings(userId);
       const service = createVapiService({
@@ -314,12 +315,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         assistantId: settings?.assistantId ?? undefined,
         phoneNumberId: settings?.phoneNumberId ?? undefined,
       });
-      const call = await service.getCall(req.params.callId);
-      res.json(call);
+      
+      // Enhanced call status with detailed information
+      const callDetails = await service.getCallDetails(callId);
+      res.json({
+        ...callDetails,
+        enhanced: true,
+        timestamp: new Date().toISOString(),
+        userAgent: req.get('User-Agent')
+      });
     } catch (error) {
-      console.error("Error fetching VAPI call:", error);
+      console.error("Error fetching call details:", error);
       res.status(500).json({ 
-        message: "Error fetching call from VAPI API" 
+        message: "Error fetching call details from VAPI",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // New endpoint: Cancel/End active calls
+  app.post("/api/vapi/calls/:callId/cancel", authMiddleware, async (req, res) => {
+    try {
+      const { callId } = req.params;
+      const userId = (req as any).userId as string;
+      const settings = await storage.getUserSettings(userId);
+      const service = createVapiService({
+        privateKey: (settings?.vapiPrivateKey ?? undefined) || process.env.VAPI_PRIVATE_KEY,
+        assistantId: settings?.assistantId ?? undefined,
+        phoneNumberId: settings?.phoneNumberId ?? undefined,
+      });
+      
+      const result = await service.cancelCall(callId);
+      res.json({
+        message: "Call cancelled successfully",
+        callId,
+        result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error cancelling call:", error);
+      res.status(500).json({ 
+        message: "Error cancelling call",
+        error: error instanceof Error ? error.message : "Unknown error"
       });
     }
   });

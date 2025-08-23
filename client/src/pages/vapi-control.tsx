@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, PhoneCall, User, Settings, CheckCircle, AlertCircle, Search, Activity, Clock, MapPin, Mail, Calendar } from "lucide-react";
+import { Phone, PhoneCall, User, Settings, CheckCircle, AlertCircle, Search, Activity, Clock, MapPin, Mail, Calendar, Eye, PhoneOff } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -16,10 +16,13 @@ export default function VapiControl() {
   const [agentId, setAgentId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
+  const [isCallInProgress, setIsCallInProgress] = useState(false);
+  const [selectedCall, setSelectedCall] = useState<any>(null);
+  const [showCallDetails, setShowCallDetails] = useState(false);
   const { toast } = useToast();
 
   // Get VAPI calls
-  const { data: vapiCalls = [], isLoading: callsLoading } = useQuery<any[]>({
+  const { data: vapiCalls = [], isLoading: callsLoading, refetch: callsQuery } = useQuery<any[]>({
     queryKey: ['/api/vapi/calls'],
   });
 
@@ -132,6 +135,46 @@ export default function VapiControl() {
     }
     
     createCallMutation.mutate(phoneNumber);
+  };
+
+  // New handler functions
+  const handleViewCallDetails = async (callId: string) => {
+    try {
+      const response = await apiRequest(`/api/vapi/calls/${callId}`, {
+        method: 'GET'
+      });
+      setSelectedCall(response);
+      setShowCallDetails(true);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch call details",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelCall = async (callId: string) => {
+    try {
+      await apiRequest(`/api/vapi/calls/${callId}/cancel`, {
+        method: 'POST'
+      });
+      
+      toast({
+        title: "Success",
+        description: "Call cancelled successfully",
+        variant: "default",
+      });
+      
+      // Refresh the calls list
+      callsQuery.refetch();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to cancel call",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatPhoneNumber = (phone: string) => {
@@ -306,6 +349,162 @@ export default function VapiControl() {
                 <p className="text-sm text-gray-400">Try searching with a different agent ID, phone number, or customer name</p>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Real-time Call Status */}
+        {isCallInProgress && (
+          <Card className="mb-6 border-green-200 bg-green-50">
+            <CardHeader>
+              <CardTitle className="flex items-center text-green-900">
+                <div className="animate-pulse mr-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                </div>
+                Active Call in Progress
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="text-green-800">
+                  <p className="font-medium">Calling: {phoneNumber}</p>
+                  <p className="text-sm">Your AI Sales Girl is on the line!</p>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-green-300 text-green-700 hover:bg-green-100"
+                    onClick={() => {
+                      // This would need the actual call ID from the active call
+                      toast({
+                        title: "Call Management",
+                        description: "Call management features coming soon!",
+                        variant: "default",
+                      });
+                    }}
+                  >
+                    <Phone className="mr-1 h-4 w-4" />
+                    Manage Call
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* VAPI Usage Analytics */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Activity className="mr-2 h-5 w-5" />
+              VAPI Usage Analytics
+            </CardTitle>
+            <CardDescription>
+              Track your AI Sales Girl's performance and call analytics
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                <div className="text-2xl font-bold text-blue-600">
+                  {vapiCalls?.length || 0}
+                </div>
+                <div className="text-sm text-blue-800">Total Calls</div>
+                <div className="text-xs text-blue-600 mt-1">This month</div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+                <div className="text-2xl font-bold text-green-600">
+                  {vapiCalls?.filter(call => call.status === 'completed').length || 0}
+                </div>
+                <div className="text-sm text-green-800">Successful</div>
+                <div className="text-xs text-green-600 mt-1">Completed calls</div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {vapiCalls?.filter(call => call.status === 'in-progress').length || 0}
+                </div>
+                <div className="text-sm text-yellow-800">Active</div>
+                <div className="text-xs text-yellow-600 mt-1">In progress</div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
+                <div className="text-2xl font-bold text-purple-600">
+                  ${vapiCalls?.reduce((total, call) => total + (parseFloat(call.cost) || 0), 0).toFixed(2) || '0.00'}
+                </div>
+                <div className="text-sm text-purple-800">Total Cost</div>
+                <div className="text-xs text-purple-600 mt-1">This month</div>
+              </div>
+            </div>
+
+            {/* Performance Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-3">Call Success Rate</h4>
+                <div className="flex items-center space-x-2">
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${vapiCalls && vapiCalls.length > 0 ? 
+                          (vapiCalls.filter(call => call.status === 'completed').length / vapiCalls.length) * 100 : 0
+                        }%` 
+                      }}
+                    ></div>
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">
+                    {vapiCalls && vapiCalls.length > 0 ? 
+                      Math.round((vapiCalls.filter(call => call.status === 'completed').length / vapiCalls.length) * 100) : 0
+                    }%
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {vapiCalls?.filter(call => call.status === 'completed').length || 0} out of {vapiCalls?.length || 0} calls successful
+                </p>
+              </div>
+              
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-3">Average Call Duration</h4>
+                <div className="text-2xl font-bold text-blue-600">
+                  {vapiCalls && vapiCalls.length > 0 ? 
+                    Math.round(vapiCalls.reduce((total, call) => total + (parseInt(call.duration) || 0), 0) / vapiCalls.length) : 0
+                  }s
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Based on {vapiCalls?.filter(call => call.duration).length || 0} completed calls
+                </p>
+              </div>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="mt-6">
+              <h4 className="font-medium text-gray-900 mb-3">Recent Call Activity</h4>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {vapiCalls && vapiCalls.slice(0, 5).map((call) => (
+                  <div key={call.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-2 h-2 rounded-full ${
+                        call.status === 'completed' ? 'bg-green-500' :
+                        call.status === 'in-progress' ? 'bg-yellow-500' :
+                        call.status === 'failed' ? 'bg-red-500' : 'bg-gray-500'
+                      }`}></div>
+                      <span className="text-sm text-gray-700">
+                        {call.phoneNumber || 'Unknown'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {new Date(call.createdAt || Date.now()).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))}
+                {(!vapiCalls || vapiCalls.length === 0) && (
+                  <div className="text-center py-4 text-gray-500">
+                    <p className="text-sm">No calls yet. Start making calls to see analytics!</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -613,6 +812,99 @@ export default function VapiControl() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Call Details Modal */}
+        {showCallDetails && selectedCall && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Call Details</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCallDetails(false)}
+                >
+                  ✕
+                </Button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Call ID</label>
+                    <p className="text-sm">{selectedCall.id}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Status</label>
+                    <Badge variant={
+                      selectedCall.status === 'completed' ? 'default' :
+                      selectedCall.status === 'in-progress' ? 'secondary' :
+                      selectedCall.status === 'failed' ? 'destructive' : 'outline'
+                    }>
+                      {selectedCall.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Phone Number</label>
+                    <p className="text-sm">{selectedCall.phoneNumber || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Duration</label>
+                    <p className="text-sm">{selectedCall.duration || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Cost</label>
+                    <p className="text-sm">${selectedCall.cost || '0.00'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Created</label>
+                    <p className="text-sm">
+                      {new Date(selectedCall.createdAt || Date.now()).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+                
+                {selectedCall.transcript && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Transcript</label>
+                    <div className="mt-1 p-3 bg-gray-50 rounded text-sm max-h-40 overflow-y-auto">
+                      {selectedCall.transcript}
+                    </div>
+                  </div>
+                )}
+                
+                {selectedCall.analytics && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Analytics</label>
+                    <div className="mt-1 p-3 bg-blue-50 rounded text-sm">
+                      <pre className="whitespace-pre-wrap">{JSON.stringify(selectedCall.analytics, null, 2)}</pre>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-end space-x-2 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCallDetails(false)}
+                >
+                  Close
+                </Button>
+                {selectedCall.status === 'in-progress' && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      handleCancelCall(selectedCall.id);
+                      setShowCallDetails(false);
+                    }}
+                  >
+                    End Call
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <footer className="mt-8 py-8 bg-gray-800 text-white rounded-lg">
